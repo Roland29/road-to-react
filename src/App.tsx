@@ -31,35 +31,58 @@ const App = () => {
     },
   ];
 
+  const useStorageState = (
+    key: string,
+    initialState: string
+  ): [string, (newValue: string) => void] => {
+    const [value, setValue] = React.useState(localStorage.getItem(key) || initialState);
+    React.useEffect(() => {
+      localStorage.setItem(key, value);
+    }, [value, key]);
+
+    return [value, setValue];
+  };
+
+  const [searchTerm, setSearchTerm] = useStorageState('search', 'React');
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+  };
+
+  const searchStories = stories.filter((story) =>
+    story.title.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div>
       <h1>My Hacker Stories</h1>
 
-      <Search />
+      {/*<Search onSearch={handleSearch} searchTerm={searchTerm} />*/}
+      <InputWithLabel id="search" value={searchTerm} onInputChange={handleSearch} isFocused>
+        Search:
+      </InputWithLabel>
 
       <hr />
 
-      <List list={stories} />
+      <List list={searchStories} />
     </div>
   );
 };
 
-const Search = () => {
-  const [searchTerm, setSearchTerm] = React.useState('');
-
-  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-  };
-
+type SearchProps = {
+  onSearch: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  searchTerm: string;
+};
+// eslint-disable-next-line
+const Search: React.FC<SearchProps> = (props) => {
   return (
-    <div>
+    <>
       <label htmlFor="search">Search: </label>
-      <input id="search" type="text" onChange={handleChange} />
+      <input id="search" type="text" onChange={props.onSearch} defaultValue={props.searchTerm} />
 
       <p>
-        Searching for <strong>{searchTerm}</strong>.
+        Searching for <strong>{props.searchTerm}</strong>.
       </p>
-    </div>
+    </>
   );
 };
 
@@ -90,4 +113,37 @@ const Item: React.FC<ItemProps> = (props) => (
   </li>
 );
 
+type InputWithLabelProps = {
+  id: string;
+  value: string;
+  type?: string;
+  onInputChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  children: React.ReactNode;
+  isFocused: boolean;
+};
+const InputWithLabel: React.FC<InputWithLabelProps> = ({
+  id,
+  value,
+  type = 'text',
+  onInputChange,
+  isFocused,
+  children,
+}) => {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  React.useEffect(() => {
+    if (isFocused && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isFocused]);
+  return (
+    <>
+      <label htmlFor={id}>{children} </label>
+      &nbsp;
+      <input id={id} type={type} onChange={onInputChange} value={value} ref={inputRef} />
+      <p>
+        Searching for <strong>{value}</strong>.
+      </p>
+    </>
+  );
+};
 export default App;
