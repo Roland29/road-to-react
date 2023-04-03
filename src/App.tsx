@@ -272,3 +272,5 @@ const Item: React.FC<ItemProps> = ({ item, onRemoveItem }) => (
 );
 
 export default App;
+
+export { storiesReducer, SearchForm, InputWithLabel, List, Item };
