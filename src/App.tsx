@@ -1,6 +1,8 @@
 import * as React from 'react';
 import axios from 'axios';
 
+import './App.css';
+
 type Story = {
   objectID: string;
   url: string;
@@ -73,14 +75,23 @@ const storiesReducer = (state: StoriesState, action: StoriesAction) => {
   }
 };
 
+const getSumComments = (stories: StoriesState) => {
+  console.log('C');
+  return stories.data.reduce((res, value) => res + value.num_comments, 0);
+};
 const useStorageState = (
   key: string,
   initialState: string
 ): [string, (newValue: string) => void] => {
+  const isMounted = React.useRef(false);
   const [value, setValue] = React.useState(localStorage.getItem(key) || initialState);
 
   React.useEffect(() => {
-    localStorage.setItem(key, value);
+    if (!isMounted.current) {
+      isMounted.current = true;
+    } else {
+      localStorage.setItem(key, value);
+    }
   }, [value, key]);
 
   return [value, setValue];
@@ -118,12 +129,12 @@ const App = () => {
     handleFetchStories();
   }, [handleFetchStories]);
 
-  const handleRemoveStory = (item: Story) => {
+  const handleRemoveStory = React.useCallback((item: Story) => {
     dispatchStories({
       type: 'REMOVE_STORY',
       payload: item,
     });
-  };
+  }, []);
 
   const handleSearchInput = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
@@ -135,9 +146,11 @@ const App = () => {
     event.preventDefault();
   };
 
+  console.log('B:App');
+  const sumComments = React.useMemo(() => getSumComments(stories), [stories]);
   return (
-    <div>
-      <h1>My Hacker Stories</h1>
+    <div className="container">
+      <h1 className="headline-primary">My Hacker Stories with {sumComments} comments.</h1>
 
       <SearchForm
         searchTerm={searchTerm}
@@ -165,12 +178,12 @@ type SearchFormProps = {
 };
 
 const SearchForm: React.FC<SearchFormProps> = ({ searchTerm, onSearchInput, onSearchSubmit }) => (
-  <form onSubmit={onSearchSubmit}>
+  <form onSubmit={onSearchSubmit} className="search-form">
     <InputWithLabel id="search" value={searchTerm} isFocused onInputChange={onSearchInput}>
       <strong>Search:</strong>
     </InputWithLabel>
 
-    <button type="submit" disabled={!searchTerm}>
+    <button type="submit" disabled={!searchTerm} className="button button_large">
       Submit
     </button>
   </form>
@@ -203,9 +216,18 @@ const InputWithLabel: React.FC<InputWithLabelProps> = ({
 
   return (
     <>
-      <label htmlFor={id}>{children}</label>
+      <label htmlFor={id} className="label">
+        {children}
+      </label>
       &nbsp;
-      <input ref={inputRef} id={id} type={type} value={value} onChange={onInputChange} />
+      <input
+        ref={inputRef}
+        id={id}
+        type={type}
+        value={value}
+        onChange={onInputChange}
+        className="input"
+      />
     </>
   );
 };
@@ -215,13 +237,18 @@ type ListProps = {
   onRemoveItem: (item: Story) => void;
 };
 
-const List: React.FC<ListProps> = ({ list, onRemoveItem }) => (
-  <ul>
-    {list.map((item) => (
-      <Item key={item.objectID} item={item} onRemoveItem={onRemoveItem} />
-    ))}
-  </ul>
-);
+// eslint-disable-next-line
+const List: React.FC<ListProps> = React.memo(({ list, onRemoveItem }) => {
+  console.log('B:List');
+  return (
+    <ul>
+      {/*eslint-disable-next-line*/}
+      {list.map((item) => (
+        <Item key={item.objectID} item={item} onRemoveItem={onRemoveItem} />
+      ))}
+    </ul>
+  );
+});
 
 type ItemProps = {
   item: Story;
@@ -229,15 +256,15 @@ type ItemProps = {
 };
 
 const Item: React.FC<ItemProps> = ({ item, onRemoveItem }) => (
-  <li>
-    <span>
+  <li className="item">
+    <span style={{ width: '40%' }}>
       <a href={item.url}>{item.title}</a>
     </span>
-    <span>{item.author}</span>
-    <span>{item.num_comments}</span>
-    <span>{item.points}</span>
-    <span>
-      <button type="button" onClick={() => onRemoveItem(item)}>
+    <span style={{ width: '30%' }}>{item.author}</span>
+    <span style={{ width: '10%' }}>{item.num_comments}</span>
+    <span style={{ width: '10%' }}>{item.points}</span>
+    <span style={{ width: '10%' }}>
+      <button type="button" onClick={() => onRemoveItem(item)} className="button button_small">
         Dismiss
       </button>
     </span>
